@@ -32,6 +32,8 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
             [HarmonyPrefix]
             internal static bool Prefix(TrafficLightsIntersection __instance, float realtimeSinceStartup)
             {
+                if (__instance == null) return true;
+
                 bool yellowLight = (bool)_yellowLightField.GetValue(__instance);
                 bool stopUpdate = (bool)_stopUpdateField.GetValue(__instance);
                 float currentTime = (float)_currentTimeField.GetValue(__instance);
@@ -56,12 +58,14 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
 
             private static IEnumerator DelayedGreenRoutine(TrafficLightsIntersection instance, int currentRoad, float realtimeSinceStartup)
             {
+                if (instance == null) yield break;
                 // First, turn current road red
                 _changeColorsMethod.Invoke(instance, new object[] { currentRoad, Enum.Parse(typeof(TrafficLightsColor), "Red") });
                 _applyChangesMethod.Invoke(instance, null);
 
                 // Wait 2-3 seconds
                 yield return new WaitForSeconds(UnityEngine.Random.Range(2f, 3f));
+                if (instance == null) yield break;
 
                 // Switch to next green road
                 int nextRoad = (int)_getValidMethod.Invoke(instance, new object[] { currentRoad + 1 });
