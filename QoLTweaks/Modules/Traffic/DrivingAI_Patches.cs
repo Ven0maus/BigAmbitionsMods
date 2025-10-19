@@ -1,6 +1,7 @@
 ﻿using GleyTrafficSystem;
 using HarmonyLib;
 using MelonLoader;
+using System;
 using System.Collections;
 using System.Reflection;
 using Unity.Collections;
@@ -27,7 +28,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
                     return true;
 
                 // Green light -> delay reaction
-                float delay = Random.Range(0.5f, 1.5f);
+                float delay = UnityEngine.Random.Range(0.5f, 1.5f);
                 MelonCoroutines.Start(ResumeAfterDelay(__instance, index, delay));
 
                 return false; // Skip original method
@@ -36,8 +37,16 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
             private static IEnumerator ResumeAfterDelay(DrivingAI ai, int index, float delay)
             {
                 yield return new WaitForSeconds(delay);
+                if (ai == null) yield break;
 
-                _newDriveActionArrived?.Invoke(ai, new object[] { index, SpecialDriveActionTypes.StopInPoint, false });
+                try
+                {
+                    _newDriveActionArrived?.Invoke(ai, new object[] { index, SpecialDriveActionTypes.StopInPoint, false });
+                }
+                catch(Exception)
+                {
+                    // Its possible the target waypoint no longer exists when transporting to a repair station.
+                }
             }
         }
 
@@ -96,7 +105,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
                 float lengthFactor = vehicleLength * 0.5f;
 
                 // subtle randomness (±20%)
-                float randomFactor = Random.Range(0.8f, 1f);
+                float randomFactor = UnityEngine.Random.Range(0.8f, 1f);
 
                 // Normal actions: no change
                 if (action == SpecialDriveActionTypes.Forward) return 0f;
@@ -106,7 +115,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
                 // StopInDistance: lower number → more space
                 if (action == SpecialDriveActionTypes.StopInDistance)
                 {
-                    float baseValue = Random.Range(2.5f, 6f);
+                    float baseValue = UnityEngine.Random.Range(2.5f, 6f);
                     float scaled = baseValue / (1f + 0.5f * lengthFactor * typeFactor);
                     return scaled * randomFactor;
                 }
@@ -114,7 +123,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
                 // StopNow: very urgent stop, smallest value
                 if (action == SpecialDriveActionTypes.StopNow)
                 {
-                    float baseValue = Random.Range(3f, 6f);
+                    float baseValue = UnityEngine.Random.Range(3f, 6f);
                     float scaled = baseValue / (1f + 0.5f * lengthFactor * typeFactor);
                     return scaled * randomFactor;
                 }
