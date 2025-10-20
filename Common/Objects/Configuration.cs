@@ -13,10 +13,12 @@ namespace Venomaus.BigAmbitionsMods.Common.Objects
     {
         internal readonly string FilePath;
         internal readonly Dictionary<string, Dictionary<string, ConfigEntry>> Sections = new Dictionary<string, Dictionary<string, ConfigEntry>>();
+        private readonly Dictionary<string, Dictionary<string, ConfigEntry>> _original;
 
         internal Configuration(string filePath)
         { 
             FilePath = filePath;
+            _original = new Dictionary<string, Dictionary<string, ConfigEntry>>();
         }
 
         /// <summary>
@@ -104,14 +106,29 @@ namespace Venomaus.BigAmbitionsMods.Common.Objects
             if (!File.Exists(FilePath)) return;
             var configuration = Load(FilePath);
             Clear();
+            configuration._original.Clear();
             foreach (var section in configuration.Sections)
+            {
                 Sections[section.Key] = section.Value;
+                configuration._original[section.Key] = section.Value.ToDictionary(a => a.Key, a => a.Value);
+            }
         }
 
         /// <summary>
         /// Save the configuration to file.
         /// </summary>
-        public void Save() => ConfigurationParser.Save(this);
+        public void Save(bool force = false)
+        {
+            if (force || IsModified())
+            {
+                ConfigurationParser.Save(this);
+
+                // Update original set
+                _original.Clear();
+                foreach (var section in Sections)
+                    _original[section.Key] = section.Value.ToDictionary(a => a.Key, a => a.Value);
+            }
+        }
 
         /// <summary>
         /// Removes all sections and entries from the configuration.
@@ -119,11 +136,56 @@ namespace Venomaus.BigAmbitionsMods.Common.Objects
         public void Clear() => Sections.Clear();
 
         /// <summary>
+        /// Returns true if the configuration has been modified compared to its original state.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsModified()
+        {
+            // Quick check: different number of sections
+            if (_original.Count != Sections.Count)
+                return true;
+
+            foreach (var kvpOne in Sections)
+            {
+                // Section missing
+                if (!_original.TryGetValue(kvpOne.Key, out var originalEntries))
+                    return true;
+
+                // Different number of entries
+                if (kvpOne.Value.Count != originalEntries.Count)
+                    return true;
+
+                // Compare all entries
+                foreach (var kvpTwo in kvpOne.Value)
+                {
+                    if (!originalEntries.TryGetValue(kvpTwo.Key, out var originalEntry))
+                        return true;
+
+                    // Value difference
+                    if (!string.Equals(kvpTwo.Value.Value, originalEntry.Value, StringComparison.Ordinal))
+                        return true;
+
+                    // Description difference
+                    if (!string.Equals(kvpTwo.Value.Description, originalEntry.Description, StringComparison.Ordinal))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Laods a configuration file from the disk, useful to read other mod's configuration files.
         /// </summary>
         /// <param name="filePath"></param>
         /// <returns></returns>
-        public static Configuration Load(string filePath) => ConfigurationParser.Load(filePath);
+        public static Configuration Load(string filePath)
+        {
+            var configuration = ConfigurationParser.Load(filePath);
+            foreach (var section in configuration.Sections)
+                configuration._original[section.Key] = section.Value.ToDictionary(a => a.Key, a => a.Value);
+            return configuration;
+        }
 
         internal void Set(string section, string key, string value, string description, bool overwrite)
         {
