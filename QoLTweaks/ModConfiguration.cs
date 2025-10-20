@@ -8,9 +8,9 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks
         private static Configuration _configuration;
 
         // Data of modules
-        internal static int PremiumSubscriptionBiWeeklyCost => _configuration.GetEntry<int>("Traffic.PremiumSubscriptionBiWeeklyCost");
-        internal static int PremiumSubscriptionCoversRepairCostPercentage => _configuration.GetEntry<int>("Traffic.PremiumSubscriptionCoversRepairCostPercentage");
-        internal static int AIDrivingSpeedReduction => _configuration.GetEntry<int>("Traffic.AIDrivingSpeedReduction");
+        internal static int PremiumSubscriptionBiWeeklyCost => Get<int>("Traffic.PremiumSubscriptionBiWeeklyCost");
+        internal static int PremiumSubscriptionCoversRepairCostPercentage => Get<int>("Traffic.PremiumSubscriptionCoversRepairCostPercentage");
+        internal static int AIDrivingSpeedReduction => Get<int>("Traffic.AIDrivingSpeedReduction");
 
         internal static void Setup()
         {

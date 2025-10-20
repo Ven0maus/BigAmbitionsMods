@@ -115,7 +115,7 @@ namespace Venomaus.BigAmbitionsMods.Common.Objects
         }
 
         /// <summary>
-        /// Save the configuration to file.
+        /// Save the configuration to file if the state was modified, or if its forced.
         /// </summary>
         public void Save(bool force = false)
         {
