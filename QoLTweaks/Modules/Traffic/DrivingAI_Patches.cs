@@ -59,7 +59,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
             [HarmonyPostfix]
             internal static void Postfix(ref float __result)
             {
-                __result *= 1.0f - ModConfiguration.AIDrivingSpeedReduction.Value / 100f;
+                __result *= 1.0f - ModConfiguration.AIDrivingSpeedReduction / 100f;
             }
         }
 

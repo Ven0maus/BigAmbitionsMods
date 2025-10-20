@@ -43,9 +43,9 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
                     FuelPrices = _fuelPrices.Select(a => $"{a.Key}{Seperator}{a.Value}").ToArray()
                 };
                 var result = JsonConvert.SerializeObject(data, Formatting.None);
-                var path = e.GetSaveStorePath(Path.Combine("Traffic", "GasStationData.json"));
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
-                File.WriteAllText(e.GetSaveStorePath(Path.Combine("Traffic", "GasStationData.json")), result);
+                var saveStorePath = e.GetSaveStoreFolderPath();
+                var filePath = Path.Combine(saveStorePath, "Traffic_GasStationData.json");
+                File.WriteAllText(filePath, result);
 
                 Melon<Mod>.Logger.Msg("Saved gas station data.");
             }
@@ -60,30 +60,38 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
         /// </summary>
         internal static void Load(SaveDataLib.SaveFileArgs e)
         {
-            var filePath = e.GetSaveStorePath(Path.Combine("Traffic", "GasStationData.json"));
+            var saveStorePath = e.GetSaveStoreFolderPath(); 
+            var filePath = Path.Combine(saveStorePath, "Traffic_GasStationData.json");
             if (File.Exists(filePath))
             {
-                var result = File.ReadAllText(filePath);
-                var data = JsonConvert.DeserializeObject<JObject>(result);
-
-                var splitter = new[] { Seperator };
-                var subscriptions = data["Subscriptions"]?.ToObject<string[]>() ?? Array.Empty<string>();
-                _subscriptions = subscriptions.Select(a =>
+                try
                 {
-                    var parts = a.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
-                    var streetNameParts = parts[0].Split(' ');
-                    return (new Address((StreetName)Enum.Parse(typeof(StreetName), streetNameParts[0]), int.Parse(streetNameParts[1])), parts[1]);
-                }).ToDictionary(a => a.Item1, a => a.Item2);
+                    var result = File.ReadAllText(filePath);
+                    var data = JsonConvert.DeserializeObject<JObject>(result);
 
-                var fuelPrices = data["FuelPrices"]?.ToObject<string[]>() ?? Array.Empty<string>();
-                _fuelPrices = fuelPrices.Select(a =>
+                    var splitter = new[] { Seperator };
+                    var subscriptions = data["Subscriptions"]?.ToObject<string[]>() ?? Array.Empty<string>();
+                    _subscriptions = subscriptions.Select(a =>
+                    {
+                        var parts = a.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
+                        var streetNameParts = parts[0].Split(' ');
+                        return (new Address((StreetName)Enum.Parse(typeof(StreetName), streetNameParts[0]), int.Parse(streetNameParts[1])), parts[1]);
+                    }).ToDictionary(a => a.Item1, a => a.Item2);
+
+                    var fuelPrices = data["FuelPrices"]?.ToObject<string[]>() ?? Array.Empty<string>();
+                    _fuelPrices = fuelPrices.Select(a =>
+                    {
+                        var parts = a.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
+                        var streetNameParts = parts[0].Split(' ');
+                        return (new Address((StreetName)Enum.Parse(typeof(StreetName), streetNameParts[0]), int.Parse(streetNameParts[1])), float.Parse(parts[1]));
+                    }).ToDictionary(a => a.Item1, a => a.Item2);
+
+                    Melon<Mod>.Logger.Msg("Loaded gas station data.");
+                }
+                catch (Exception ex)
                 {
-                    var parts = a.Split(splitter, StringSplitOptions.RemoveEmptyEntries);
-                    var streetNameParts = parts[0].Split(' ');
-                    return (new Address((StreetName)Enum.Parse(typeof(StreetName), streetNameParts[0]), int.Parse(streetNameParts[1])), float.Parse(parts[1]));
-                }).ToDictionary(a => a.Item1, a => a.Item2);
-
-                Melon<Mod>.Logger.Msg("Loaded gas station data.");
+                    Melon<Mod>.Logger.Msg("Error while loading gas station data: " + ex.Message);
+                }
             }
         }
 
@@ -95,7 +103,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
         {
             private static readonly FieldInfo _argumentsField = typeof(ButtonInfo).GetField("arguments", BindingFlags.Public | BindingFlags.Instance);
             private static readonly FieldInfo _keyField = typeof(ButtonInfo).GetField("key", BindingFlags.Public | BindingFlags.Instance);
-            private static readonly int _subscriptionCost = Mathf.RoundToInt(ModConfiguration.PremiumSubscriptionBiWeeklyCost.Value / 14f);
+            private static readonly int _subscriptionCost = Mathf.RoundToInt(ModConfiguration.PremiumSubscriptionBiWeeklyCost / 14f);
 
             [HarmonyPostfix]
             internal static void Postfix(GasStationOverlay __instance, ref ButtonInfo[] __result)
@@ -191,7 +199,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
                         {
                             // Apply price reduction
                             float price = VehicleHelper.GetCurrentVehicle().CalculateRepairCost();
-                            price *= 1.0f - ModConfiguration.PremiumSubscriptionCoversRepairCostPercentage.Value / 100f;
+                            price *= 1.0f - ModConfiguration.PremiumSubscriptionCoversRepairCostPercentage / 100f;
 
                             var newArgs = new { price = price.ToShortCurrencyFormat(false) };
                             argsField.SetValue(repairButton, newArgs); // Update args via reflection since its a readonly field
@@ -209,9 +217,9 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
                     // Initial cost, but also an automated daily cost
                     return new ButtonInfo("Buy Premium Subscription", "Buy Premium Subscription ({initial} | {daily}/day)", new
                     {
-                        initial = ModConfiguration.PremiumSubscriptionBiWeeklyCost.Value.ToShortCurrencyFormat(false),
+                        initial = ModConfiguration.PremiumSubscriptionBiWeeklyCost.ToShortCurrencyFormat(false),
                         daily = _subscriptionCost.ToShortCurrencyFormat(false)
-                    }, "blue", () => BuyPremiumSubscription(gasStationTrigger, buildingAddress, ModConfiguration.PremiumSubscriptionBiWeeklyCost.Value), PlayerAction.Interact, true);
+                    }, "blue", () => BuyPremiumSubscription(gasStationTrigger, buildingAddress, ModConfiguration.PremiumSubscriptionBiWeeklyCost), PlayerAction.Interact, true);
                 }
                 else
                 {
@@ -345,7 +353,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
                         }
 
                         // a % of the repair cost is covered by the subscription.
-                        repairCost *= 1.0f - ModConfiguration.PremiumSubscriptionCoversRepairCostPercentage.Value / 100f;
+                        repairCost *= 1.0f - ModConfiguration.PremiumSubscriptionCoversRepairCostPercentage / 100f;
 
                         if (GameManager.ChangeMoneySafe(-repairCost, Transaction.TransactionType.ItemPurchase, new Transaction.DataHolder
                         {

@@ -1,8 +1,8 @@
 ﻿using HarmonyLib;
 using MelonLoader;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -63,46 +63,38 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
         /// <summary>
         /// Returns the folder path, where mod files can be stored.
         /// </summary>
+        /// <param name="hash">If provided, will append the folder for the provided hash.</param>
+        /// <param name="assembly">Your executing assembly, sometimes it must be provided incase automated stacktrace retrieval is not accurate.</param>
         /// <returns></returns>
-        public string GetSaveStorePath()
+        public string GetSaveStoreFolderPath(Assembly assembly = null)
         {
-            var modAssembly = GetCallingModAssembly();
-            var modName = GetModNameFromAssembly(modAssembly);
+            var modAssembly = assembly ?? Lib.Config.GetCallingModAssembly();
+            var modName = Lib.Config.GetMelonNameFromAssembly(modAssembly);
 
             // Path to userdata folder
             string modFolderPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "UserData", modName, "Savestore"));
+
             if (!Directory.Exists(modFolderPath))
                 Directory.CreateDirectory(modFolderPath);
+
             return modFolderPath;
         }
 
-        private static Assembly GetCallingModAssembly()
+        /// <summary>
+        /// Returns the folder path, where mod files of a specific savefile can be stored.
+        /// </summary>
+        /// <param name="saveFilePath"></param>
+        /// <param name="assembly">Your executing assembly, sometimes it must be provided incase automated stacktrace retrieval is not accurate.</param>
+        /// <returns></returns>
+        internal string GetSaveStoreFolderPathForSaveFile(string saveFilePath, Assembly assembly = null)
         {
-            StackTrace trace = new StackTrace();
-            foreach (var frame in trace.GetFrames())
-            {
-                MethodBase method = frame.GetMethod();
-                Assembly asm = method.DeclaringType?.Assembly;
+            var saveStorePath = GetSaveStoreFolderPath(assembly);
+            var combined = Path.Combine(saveStorePath, GetFnvHash(saveFilePath).ToString());
 
-                if (asm == null || asm == Assembly.GetExecutingAssembly())
-                    continue;
+            if (!Directory.Exists(combined))
+                Directory.CreateDirectory(combined);
 
-                // First assembly that is not Common.dll is likely the mod
-                return asm;
-            }
-
-            return Assembly.GetCallingAssembly(); // fallback
-        }
-
-        private static string GetModNameFromAssembly(Assembly asm)
-        {
-            // Try to read MelonInfoAttribute
-            var attr = (MelonInfoAttribute)asm.GetCustomAttribute(typeof(MelonInfoAttribute));
-            if (attr != null)
-                return attr.Name;
-
-            // fallback: assembly name
-            return asm.GetName().Name;
+            return combined;
         }
 
         // LOADING
@@ -174,51 +166,51 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
             }
         }
 
+        /// <summary>
+        /// The event args for save/load events.
+        /// </summary>
         public sealed class SaveFileArgs : EventArgs
         {
             /// <summary>
-            /// A unique FNV hash that is generated from the loaded savegamefile's path.
-            /// <br>Append to your custom data files like {filename}_{hash}.extension that way you can find it back on load easily.</br>
+            /// The path of the save file, don't use this to save your custom mod files, use <see cref="GetSaveStoreFolderPath"/> instead.
             /// </summary>
-            public string Hash { get; }
+            public string SaveFilePath { get; }
 
-            internal SaveFileArgs(string path)
+            internal SaveFileArgs(string saveFilePath)
             {
-                Hash = Lib.SaveData.GetFnvHash(path).ToString();
+                SaveFilePath = saveFilePath;
+            }
+
+            private void CreateMetadataFile(Assembly assembly = null)
+            {
+                var metadataPath = Path.Combine(Lib.SaveData.GetSaveStoreFolderPath(assembly), Lib.SaveData.GetFnvHash(SaveFilePath).ToString(), "metadata.meta");
+                if (!File.Exists(metadataPath))
+                {
+                    var metadata = new
+                    {
+                        SaveFilePath
+                    };
+
+                    try
+                    {
+                        File.WriteAllText(metadataPath, JsonConvert.SerializeObject(metadata, Formatting.Indented));
+                    }
+                    catch (Exception)
+                    {
+                        Melon<Mod>.Logger.Msg($"Unable to create metadata.meta file at location \"{metadataPath}\".");
+                    }
+                }
             }
 
             /// <summary>
-            /// Returns a path of the specified filename to the savestore linked to this savefile.
-            /// <br>Will look something like UserData/Mod/Savestore/{hash}_{filenameWithExtension}</br>
-            /// <br>The directory is automatically created.</br>
+            /// The path to the savestore folder for this specific savefile, where you can place your mod files.
             /// </summary>
-            /// <param name="filenameWithExtension">The filename you want to store</param>
+            /// <param name="assembly">Your executing assembly, sometimes it must be provided incase automated stacktrace retrieval is not accurate.</param>
             /// <returns></returns>
-            public string GetSaveStorePath(string filenameWithExtension)
+            public string GetSaveStoreFolderPath(Assembly assembly = null)
             {
-                string basePath = Lib.SaveData.GetSaveStorePath();
-
-                // Normalize input (remove any leading/trailing slashes)
-                filenameWithExtension = filenameWithExtension.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-                // Split path into directory and filename
-                string directory = Path.GetDirectoryName(filenameWithExtension);
-                string filename = Path.GetFileName(filenameWithExtension);
-
-                // Prefix hash to the filename
-                string hashedFilename = $"{Hash}_{filename}";
-
-                // Combine everything back
-                string fullPath = directory != null && directory.Length > 0
-                    ? Path.Combine(basePath, directory, hashedFilename)
-                    : Path.Combine(basePath, hashedFilename);
-
-                // Ensure directory exists
-                string folder = Path.GetDirectoryName(fullPath);
-                if (!Directory.Exists(folder))
-                    Directory.CreateDirectory(folder);
-
-                return fullPath;
+                CreateMetadataFile(assembly);
+                return Lib.SaveData.GetSaveStoreFolderPathForSaveFile(SaveFilePath, assembly);
             }
         }
     }

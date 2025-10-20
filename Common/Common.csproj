@@ -76,6 +76,10 @@
     <Reference Include="MelonLoader">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Big Ambitions\MelonLoader\net35\MelonLoader.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Big Ambitions\MelonLoader\net35\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Big Ambitions\unstripped_corlib\UnityEngine.dll</HintPath>
     </Reference>
@@ -96,11 +100,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\ConfigLib.cs" />
     <Compile Include="Core\SaveDataLib.cs" />
     <Compile Include="Core\TimeLib.cs" />
     <Compile Include="Helpers\ColoredStringBuilder.cs" />
+    <Compile Include="Helpers\ConfigurationParser.cs" />
     <Compile Include="Lib.cs" />
     <Compile Include="Mod.cs" />
+    <Compile Include="Objects\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

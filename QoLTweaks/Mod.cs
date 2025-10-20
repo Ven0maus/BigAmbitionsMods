@@ -65,9 +65,9 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks
 
         private void ApplyModulePatches()
         {
-            var moduleGroups = new (MelonPreferences_Entry<bool>, Type[] PatchTypes)[]
+            var moduleGroups = new (string, Type[] PatchTypes)[]
             {
-                (ModConfiguration.Traffic, new Type[]
+                ("Modules.Traffic", new Type[]
                 {
                     typeof(TrafficLight_Patches),
                     typeof(DrivingAI_Patches),
@@ -79,7 +79,8 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks
             foreach (var (entry, patchTypes) in moduleGroups)
             {
                 // If module entry is enabled
-                if (entry.Value)
+                var moduleEnabled = ModConfiguration.Get<bool>(entry);
+                if (moduleEnabled)
                 {
                     foreach (var patchType in patchTypes)
                     {
@@ -92,9 +93,9 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks
 
                 // Some fancy colored logging in the console.
                 ColoredStringBuilder.Create($"  (")
-                    .Append($"{entry.DisplayName.ToUpper()}", ColorARGB.Magenta)
+                    .Append($"{entry.Split('.')[1]}", ColorARGB.Magenta)
                     .Append("): ")
-                    .Append($"{(entry.Value ? "enabled" : "disabled").ToUpper()}", entry.Value ? ColorARGB.LightGreen : ColorARGB.Red)
+                    .Append($"{(moduleEnabled ? "enabled" : "disabled").ToUpper()}", moduleEnabled ? ColorARGB.LightGreen : ColorARGB.Red)
                     .SendMessageToConsole(LoggerInstance);
             }
         }

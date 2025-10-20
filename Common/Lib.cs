@@ -9,6 +9,7 @@ namespace Venomaus.BigAmbitionsMods.Common
     {
         private static TimeLib _timeLib;
         private static SaveDataLib _saveDataLib;
+        private static ConfigLib _configLib;
 
         /// <summary>
         /// Contains everything related to game time.
@@ -19,5 +20,10 @@ namespace Venomaus.BigAmbitionsMods.Common
         /// Contains everything related to saving and loading gamedata.
         /// </summary>
         public static SaveDataLib SaveData => _saveDataLib ?? (_saveDataLib = new SaveDataLib());
+
+        /// <summary>
+        /// Contains everything related to building and retrieving persistent configuration data.
+        /// </summary>
+        public static ConfigLib Config => _configLib ?? (_configLib = new ConfigLib());
     }
 }
