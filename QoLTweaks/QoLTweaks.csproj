@@ -107,7 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Metadata\CHANGELOG.md" />
-    <None Include="Metadata\README.md" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj">
