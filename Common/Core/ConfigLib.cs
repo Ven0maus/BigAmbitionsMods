@@ -75,7 +75,7 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
             var finalAsm = resolvedAsm ?? callingAsm;
 
             // Cache for next time
-            _modAssemblyCache[key] = finalAsm;
+            _modAssemblyCache[finalAsm.FullName] = finalAsm;
 
             return finalAsm;
         }
