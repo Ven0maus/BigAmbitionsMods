@@ -183,7 +183,7 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
 
             private void CreateMetadataFile(Assembly assembly = null)
             {
-                var metadataPath = Path.Combine(Lib.SaveData.GetSaveStoreFolderPath(assembly), Lib.SaveData.GetFnvHash(SaveFilePath).ToString(), "metadata.meta");
+                var metadataPath = Path.Combine(Lib.SaveData.GetSaveStoreFolderPathForSaveFile(SaveFilePath, assembly), "metadata.meta");
                 if (!File.Exists(metadataPath))
                 {
                     var metadata = new
@@ -195,9 +195,9 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
                     {
                         File.WriteAllText(metadataPath, JsonConvert.SerializeObject(metadata, Formatting.Indented));
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        Melon<Mod>.Logger.Msg($"Unable to create metadata.meta file at location \"{metadataPath}\".");
+                        Melon<Mod>.Logger.Msg($"Unable to create metadata.meta file at location \"{metadataPath}\": {e.Message}");
                     }
                 }
             }
