@@ -1,11 +1,9 @@
 ﻿using MelonLoader;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using Venomaus.BigAmbitionsMods.Common.Helpers;
 using Venomaus.BigAmbitionsMods.Common.Objects;
 
 namespace Venomaus.BigAmbitionsMods.Common.Core
@@ -29,14 +27,13 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
         /// </summary>
         /// <param name="assembly">Your executing assembly, sometimes it must be provided incase automated stacktrace retrieval is not accurate.</param>
         /// <returns></returns>
-        public Configuration GetOrCreate(Assembly assembly = null)
+        public Configuration GetOrCreate(Assembly assembly)
         {
-            var asm = assembly ?? GetCallingModAssembly();
-            var melonName = GetMelonNameFromAssembly(asm);
+            var melonName = GetMelonNameFromAssembly(assembly);
 
             if (!_configurations.TryGetValue(melonName, out var configuration))
             {
-                var configFilePath = Path.Combine(GetUserDataPath(), $"{melonName}.cfg");
+                var configFilePath = PathUtils.SanitizePath(Path.Combine(GetUserDataPath(), $"{melonName}.cfg"));
                 _configurations[melonName] = configuration = File.Exists(configFilePath) ? 
                     Configuration.Load(configFilePath) : new Configuration(configFilePath);
             }
@@ -44,6 +41,7 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
             return configuration;
         }
 
+        private static string _userDataPath;
         /// <summary>
         /// Returns the path to the UserData folder of MelonLoader.
         /// </summary>
@@ -51,64 +49,7 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
         public string GetUserDataPath()
         {
             // Path to userdata folder
-            return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "UserData"));
-        }
-
-        // Cache per detected mod assembly
-        private static readonly ConcurrentDictionary<string, Assembly> _modAssemblyCache = new ConcurrentDictionary<string, Assembly>();
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal Assembly GetCallingModAssembly()
-        {
-            // Fast path: calling assembly
-            var callingAsm = Assembly.GetCallingAssembly();
-            var key = callingAsm.FullName;
-
-            // Already cached? return immediately
-            if (_modAssemblyCache.TryGetValue(key, out var cached))
-                return cached;
-
-            // Slow path: need to actually resolve via stack trace
-            var resolvedAsm = ResolveCaller();
-
-            // Pick the most accurate result
-            var finalAsm = resolvedAsm ?? callingAsm;
-
-            // Cache for next time
-            _modAssemblyCache[finalAsm.FullName] = finalAsm;
-
-            return finalAsm;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Assembly ResolveCaller()
-        {
-            var thisAsm = Assembly.GetExecutingAssembly();
-            var trace = new StackTrace(false);
-
-            foreach (var frame in trace.GetFrames())
-            {
-                var method = frame.GetMethod();
-                var asm = method?.DeclaringType?.Assembly;
-                if (asm == null)
-                    continue;
-
-                // Skip this library
-                if (asm == thisAsm)
-                    continue;
-
-                // Skip system/framework assemblies
-                var name = asm.GetName().Name;
-                if (name.StartsWith("System", StringComparison.OrdinalIgnoreCase)
-                    || name.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase)
-                    || name == "mscorlib" 
-                    || name == "netstandard")
-                    continue;
-
-                return asm;
-            }
-
-            return null;
+            return _userDataPath ?? (_userDataPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "UserData")));
         }
 
         /// <summary>

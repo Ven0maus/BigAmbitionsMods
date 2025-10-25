@@ -1,12 +1,12 @@
 ﻿using HarmonyLib;
 using MelonLoader;
-using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.IO;
 using System.Reflection;
 using System.Threading;
 using UnityEngine;
+using Venomaus.BigAmbitionsMods.Common.Helpers;
 using ThreadState = System.Threading.ThreadState;
 
 namespace Venomaus.BigAmbitionsMods.Common.Core
@@ -66,13 +66,12 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
         /// <param name="hash">If provided, will append the folder for the provided hash.</param>
         /// <param name="assembly">Your executing assembly, sometimes it must be provided incase automated stacktrace retrieval is not accurate.</param>
         /// <returns></returns>
-        public string GetSaveStoreFolderPath(Assembly assembly = null)
+        public string GetSaveStoreFolderPath(Assembly assembly)
         {
-            var modAssembly = assembly ?? Lib.Config.GetCallingModAssembly();
-            var modName = Lib.Config.GetMelonNameFromAssembly(modAssembly);
+            var modName = Lib.Config.GetMelonNameFromAssembly(assembly);
 
             // Path to userdata folder
-            string modFolderPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "UserData", modName, "Savestore"));
+            string modFolderPath = PathUtils.SanitizePath(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(assembly.Location), modName, "Savestore")));
 
             if (!Directory.Exists(modFolderPath))
                 Directory.CreateDirectory(modFolderPath);
@@ -86,10 +85,10 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
         /// <param name="saveFilePath"></param>
         /// <param name="assembly">Your executing assembly, sometimes it must be provided incase automated stacktrace retrieval is not accurate.</param>
         /// <returns></returns>
-        internal string GetSaveStoreFolderPathForSaveFile(string saveFilePath, Assembly assembly = null)
+        internal string GetSaveStoreFolderPathForSaveFile(Assembly assembly, string saveFilePath)
         {
             var saveStorePath = GetSaveStoreFolderPath(assembly);
-            var combined = Path.Combine(saveStorePath, GetFnvHash(saveFilePath).ToString());
+            var combined = PathUtils.SanitizePath(Path.Combine(saveStorePath, Path.GetFileNameWithoutExtension(saveFilePath)));
 
             if (!Directory.Exists(combined))
                 Directory.CreateDirectory(combined);
@@ -181,36 +180,14 @@ namespace Venomaus.BigAmbitionsMods.Common.Core
                 SaveFilePath = saveFilePath;
             }
 
-            private void CreateMetadataFile(Assembly assembly = null)
-            {
-                var metadataPath = Path.Combine(Lib.SaveData.GetSaveStoreFolderPathForSaveFile(SaveFilePath, assembly), "metadata.meta");
-                if (!File.Exists(metadataPath))
-                {
-                    var metadata = new
-                    {
-                        SaveFilePath
-                    };
-
-                    try
-                    {
-                        File.WriteAllText(metadataPath, JsonConvert.SerializeObject(metadata, Formatting.Indented));
-                    }
-                    catch (Exception e)
-                    {
-                        Melon<Mod>.Logger.Msg($"Unable to create metadata.meta file at location \"{metadataPath}\": {e.Message}");
-                    }
-                }
-            }
-
             /// <summary>
             /// The path to the savestore folder for this specific savefile, where you can place your mod files.
             /// </summary>
             /// <param name="assembly">Your executing assembly, sometimes it must be provided incase automated stacktrace retrieval is not accurate.</param>
             /// <returns></returns>
-            public string GetSaveStoreFolderPath(Assembly assembly = null)
+            public string GetSaveStoreFolderPath(Assembly assembly)
             {
-                CreateMetadataFile(assembly);
-                return Lib.SaveData.GetSaveStoreFolderPathForSaveFile(SaveFilePath, assembly);
+                return Lib.SaveData.GetSaveStoreFolderPathForSaveFile(assembly, SaveFilePath);
             }
         }
     }

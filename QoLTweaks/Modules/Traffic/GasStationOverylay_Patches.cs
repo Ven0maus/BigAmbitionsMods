@@ -43,7 +43,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
                     FuelPrices = _fuelPrices.Select(a => $"{a.Key}{Seperator}{a.Value}").ToArray()
                 };
                 var result = JsonConvert.SerializeObject(data, Formatting.None);
-                var saveStorePath = e.GetSaveStoreFolderPath();
+                var saveStorePath = e.GetSaveStoreFolderPath(Assembly.GetExecutingAssembly());
                 var filePath = Path.Combine(saveStorePath, "Traffic_GasStationData.json");
                 File.WriteAllText(filePath, result);
 
@@ -60,7 +60,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks.Modules.Traffic
         /// </summary>
         internal static void Load(SaveDataLib.SaveFileArgs e)
         {
-            var saveStorePath = e.GetSaveStoreFolderPath(); 
+            var saveStorePath = e.GetSaveStoreFolderPath(Assembly.GetExecutingAssembly()); 
             var filePath = Path.Combine(saveStorePath, "Traffic_GasStationData.json");
             if (File.Exists(filePath))
             {

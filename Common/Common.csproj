@@ -105,6 +105,7 @@
     <Compile Include="Core\TimeLib.cs" />
     <Compile Include="Helpers\ColoredStringBuilder.cs" />
     <Compile Include="Helpers\ConfigurationParser.cs" />
+    <Compile Include="Helpers\PathUtils.cs" />
     <Compile Include="Lib.cs" />
     <Compile Include="Mod.cs" />
     <Compile Include="Objects\Configuration.cs" />

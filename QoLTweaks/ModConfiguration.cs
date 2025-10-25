@@ -1,4 +1,5 @@
-﻿using Venomaus.BigAmbitionsMods.Common;
+﻿using System.Reflection;
+using Venomaus.BigAmbitionsMods.Common;
 using Venomaus.BigAmbitionsMods.Common.Objects;
 
 namespace Venomaus.BigAmbitionsMods.QoLTweaks
@@ -14,7 +15,7 @@ namespace Venomaus.BigAmbitionsMods.QoLTweaks
 
         internal static void Setup()
         {
-            _configuration = Lib.Config.GetOrCreate();
+            _configuration = Lib.Config.GetOrCreate(Assembly.GetExecutingAssembly());
 
             // Modules
             _configuration.SetEntry("Modules.Traffic", true, "This module contains several QoL tweaks regarding traffic and vehicles.");
