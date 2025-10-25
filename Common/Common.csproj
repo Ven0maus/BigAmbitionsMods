@@ -101,6 +101,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\ConfigLib.cs" />
+    <Compile Include="Core\ItemLib.cs" />
     <Compile Include="Core\SaveDataLib.cs" />
     <Compile Include="Core\TimeLib.cs" />
     <Compile Include="Helpers\ColoredStringBuilder.cs" />
